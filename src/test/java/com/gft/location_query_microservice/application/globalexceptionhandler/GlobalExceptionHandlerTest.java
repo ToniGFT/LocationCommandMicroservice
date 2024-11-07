@@ -1,5 +1,6 @@
 package com.gft.location_query_microservice.application.globalexceptionhandler;
 
+import com.gft.location_query_microservice.application.exceptions.GlobalExceptionHandler;
 import com.gft.location_query_microservice.domain.exception.LocationSaveException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

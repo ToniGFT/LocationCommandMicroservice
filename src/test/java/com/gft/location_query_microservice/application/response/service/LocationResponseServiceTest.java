@@ -41,7 +41,6 @@ class LocationResponseServiceTest {
     @Test
     @DisplayName("Build Created Response - Should Return Mono with 201 Created")
     void buildCreatedResponse_shouldReturnCreatedResponse() {
-        // given
         // when
         Mono<ResponseEntity<LocationUpdate>> result = locationResponseService.buildCreatedResponse(locationUpdate);
 
@@ -50,6 +49,33 @@ class LocationResponseServiceTest {
                 .expectNextMatches(response -> response.getStatusCode() == HttpStatus.CREATED &&
                         response.getBody() != null &&
                         response.getBody().getVehicleId().equals(vehicleId))
+                .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("Build OK Response - Should Return Mono with 200 OK")
+    void buildOkResponse_shouldReturnOkResponse() {
+        // when
+        Mono<ResponseEntity<LocationUpdate>> result = locationResponseService.buildOkResponse(locationUpdate);
+
+        // then
+        StepVerifier.create(result)
+                .expectNextMatches(response -> response.getStatusCode() == HttpStatus.OK &&
+                        response.getBody() != null &&
+                        response.getBody().getVehicleId().equals(vehicleId))
+                .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("Build No Content Response - Should Return Mono with 204 No Content")
+    void buildNoContentResponse_shouldReturnNoContentResponse() {
+        // when
+        Mono<ResponseEntity<Void>> result = locationResponseService.buildNoContentResponse();
+
+        // then
+        StepVerifier.create(result)
+                .expectNextMatches(response -> response.getStatusCode() == HttpStatus.NO_CONTENT &&
+                        response.getBody() == null)
                 .verifyComplete();
     }
 }

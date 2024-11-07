@@ -1,5 +1,6 @@
 package com.gft.location_query_microservice.application.exceptions;
 
+import com.gft.location_query_microservice.domain.exception.LocationNotFoundException;
 import com.gft.location_query_microservice.domain.exception.LocationSaveException;
 import jdk.jshell.spi.ExecutionControl;
 import org.junit.jupiter.api.BeforeEach;
@@ -11,11 +12,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageConversionException;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
-import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.context.request.WebRequest;
 import reactor.core.publisher.Mono;
 
-import java.util.Arrays;
+import java.util.List;
 import java.util.NoSuchElementException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -40,10 +41,21 @@ class GlobalExceptionHandlerTest {
     @Test
     void testHandleLocationSaveException() {
         LocationSaveException ex = new LocationSaveException("Error saving location");
-        ResponseEntity<String> response = globalExceptionHandler.handleLocationSaveException(ex);
+        Mono<ResponseEntity<ErrorResponse>> responseMono = globalExceptionHandler.handleLocationSaveException(ex);
+        ResponseEntity<ErrorResponse> response = responseMono.block();
 
         assertEquals(500, response.getStatusCodeValue());
-        assertEquals("Error saving location update: Error saving location", response.getBody());
+        assertEquals("Error saving location update: Error saving location", response.getBody().getMessage());
+    }
+
+    @Test
+    void testHandleLocationNotFoundException() {
+        LocationNotFoundException ex = new LocationNotFoundException("Location not found");
+        Mono<ResponseEntity<ErrorResponse>> responseMono = globalExceptionHandler.handleLocationNotFoundException(ex);
+        ResponseEntity<ErrorResponse> response = responseMono.block();
+
+        assertEquals(404, response.getStatusCodeValue());
+        assertEquals("Location not found", response.getBody().getMessage());
     }
 
     @Test
@@ -79,7 +91,7 @@ class GlobalExceptionHandlerTest {
     @Test
     void testHandleMethodArgumentNotValidException() {
         FieldError fieldError = new FieldError("objectName", "fieldName", "Invalid field");
-        when(bindingResult.getFieldErrors()).thenReturn(Arrays.asList(fieldError));
+        when(bindingResult.getFieldErrors()).thenReturn(List.of(fieldError));
 
         MethodArgumentNotValidException ex = new MethodArgumentNotValidException(null, bindingResult);
         Mono<ResponseEntity<ErrorResponse>> responseMono = globalExceptionHandler.handleMethodArgumentNotValid(ex);

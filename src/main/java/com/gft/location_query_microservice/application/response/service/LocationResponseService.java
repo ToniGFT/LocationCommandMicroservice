@@ -12,4 +12,12 @@ public class LocationResponseService {
     public Mono<ResponseEntity<LocationUpdate>> buildCreatedResponse(LocationUpdate locationUpdate) {
         return Mono.fromCallable(() -> LocationResponseBuilder.generateCreatedResponse(locationUpdate));
     }
+
+    public Mono<ResponseEntity<LocationUpdate>> buildOkResponse(LocationUpdate locationUpdate) {
+        return Mono.fromCallable(() -> LocationResponseBuilder.generateOkResponse(locationUpdate));
+    }
+
+    public Mono<ResponseEntity<Void>> buildNoContentResponse() {
+        return Mono.just(LocationResponseBuilder.generateNoContentResponse());
+    }
 }

@@ -13,7 +13,6 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 
 import java.util.List;
-import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -37,11 +36,13 @@ class GlobalExceptionHandlerTest {
         LocationSaveException exception = new LocationSaveException("Database error occurred");
 
         // Act
-        ResponseEntity<String> response = exceptionHandler.handleLocationSaveException(exception);
+        ResponseEntity<ErrorResponse> response = exceptionHandler.handleLocationSaveException(exception).block();
 
         // Assert
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
-        assertThat(response.getBody()).isEqualTo("Error saving location update: Database error occurred");
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR.value());
+        assertThat(response.getBody().getMessage()).isEqualTo("Error saving location update: Database error occurred");
     }
 
     @Test
@@ -54,12 +55,13 @@ class GlobalExceptionHandlerTest {
         MethodArgumentNotValidException exception = new MethodArgumentNotValidException(null, bindingResult);
 
         // Act
-        ResponseEntity<Map<String, String>> response = exceptionHandler.handleValidationExceptions(exception);
+        ResponseEntity<ErrorResponse> response = exceptionHandler.handleMethodArgumentNotValid(exception).block();
 
         // Assert
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody()).containsEntry("vehicleId", "must not be null");
+        assertThat(response.getBody().getCode()).isEqualTo(HttpStatus.BAD_REQUEST.value());
+        assertThat(response.getBody().getMessage()).contains("Validation failed: vehicleId - must not be null");
     }
 
     @Test
@@ -69,10 +71,12 @@ class GlobalExceptionHandlerTest {
         Exception exception = new Exception("Unexpected error occurred");
 
         // Act
-        ResponseEntity<String> response = exceptionHandler.handleGenericException(exception);
+        ResponseEntity<ErrorResponse> response = exceptionHandler.handleGenericException(exception, null).block();
 
         // Assert
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
-        assertThat(response.getBody()).isEqualTo("An unexpected error occurred: Unexpected error occurred");
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR.value());
+        assertThat(response.getBody().getMessage()).isEqualTo("An unexpected error occurred: Unexpected error occurred");
     }
 }

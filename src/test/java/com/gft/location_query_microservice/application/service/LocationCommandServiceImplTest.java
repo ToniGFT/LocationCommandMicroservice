@@ -3,6 +3,8 @@ package com.gft.location_query_microservice.application.service;
 import com.gft.location_query_microservice.domain.exception.LocationSaveException;
 import com.gft.location_query_microservice.domain.model.aggregates.LocationUpdate;
 import com.gft.location_query_microservice.domain.repository.LocationCommandRepository;
+import com.gft.location_query_microservice.infraestructure.model.aggregates.Vehicle;
+import com.gft.location_query_microservice.infraestructure.service.VehicleService;
 import org.bson.types.ObjectId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -11,33 +13,40 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import reactor.core.publisher.Mono;
-import reactor.test.StepVerifier;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @DisplayName("LocationCommandServiceImpl Unit Tests")
 class LocationCommandServiceImplTest {
 
-    @Mock
-    private LocationCommandRepository locationCommandRepository;
-
     @InjectMocks
     private LocationCommandServiceImpl locationService;
 
+    @Mock
+    private LocationCommandRepository locationCommandRepository;
+
+    @Mock
+    private VehicleService vehicleService;
+
     private LocationUpdate locationUpdate;
     private ObjectId vehicleId;
+    private ObjectId routeId;
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        vehicleId = new ObjectId("507f1f77bcf86cd799439011");
+        vehicleId = ObjectId.get();
+        routeId = ObjectId.get();
         locationUpdate = LocationUpdate.builder()
                 .vehicleId(vehicleId)
                 .timestamp(null)
                 .location(null)
                 .speed(50.0)
                 .direction(null)
-                .routeId(new ObjectId("507f1f77bcf86cd799439012"))
+                .routeId(routeId)
                 .passengerCount(5)
                 .status(null)
                 .events(null)
@@ -46,30 +55,29 @@ class LocationCommandServiceImplTest {
 
     @Test
     @DisplayName("Test saveLocationUpdate - Successful Save")
-    void saveLocationUpdate_Success() {
-        // Arrange
-        when(locationCommandRepository.save(locationUpdate)).thenReturn(Mono.just(locationUpdate));
+    void testSaveLocationUpdate_Success() {
+        when(vehicleService.getVehicleById(any(String.class))).thenReturn(Mono.just(new Vehicle()));
+        when(locationCommandRepository.save(any(LocationUpdate.class))).thenReturn(Mono.just(locationUpdate));
 
-        // Act & Assert
-        StepVerifier.create(locationService.saveLocationUpdate(locationUpdate))
-                .expectNext(locationUpdate)
-                .verifyComplete();
+        Mono<LocationUpdate> response = locationService.saveLocationUpdate(locationUpdate);
 
-        verify(locationCommandRepository, times(1)).save(locationUpdate);
+        assertEquals(locationUpdate, response.block());
+        verify(vehicleService, times(1)).getVehicleById(any(String.class));
+        verify(locationCommandRepository, times(1)).save(any(LocationUpdate.class));
     }
 
     @Test
-    @DisplayName("Test saveLocationUpdate - LocationSaveException")
-    void saveLocationUpdate_LocationSaveException() {
-        // Arrange
-        when(locationCommandRepository.save(locationUpdate)).thenReturn(Mono.error(new RuntimeException("Database error")));
+    @DisplayName("Test saveLocationUpdate - Vehicle Not Found")
+    void testSaveLocationUpdate_VehicleNotFound() {
+        when(vehicleService.getVehicleById(any(String.class))).thenReturn(Mono.empty());
 
-        // Act & Assert
-        StepVerifier.create(locationService.saveLocationUpdate(locationUpdate))
-                .expectErrorMatches(throwable -> throwable instanceof LocationSaveException &&
-                        throwable.getMessage().contains("Failed to save location update"))
-                .verify();
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+            locationService.saveLocationUpdate(locationUpdate).block();
+        });
 
-        verify(locationCommandRepository, times(1)).save(locationUpdate);
+        assertEquals("Vehicle not found with id: " + routeId, exception.getMessage());
+        verify(vehicleService, times(1)).getVehicleById(any(String.class));
+        verify(locationCommandRepository, never()).save(any(LocationUpdate.class));
     }
+
 }

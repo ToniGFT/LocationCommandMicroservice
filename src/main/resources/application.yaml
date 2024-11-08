@@ -4,3 +4,11 @@ spring:
   data:
     mongodb:
       uri: mongodb+srv://nabz:nabz@workshop.rh1jm.mongodb.net/Workshop?retryWrites=true&w=majority
+
+server:
+  port: 8081
+
+vehicles:
+  api:
+    base-url: http://localhost:8080
+    get-by-id: /vehicles/{idString}

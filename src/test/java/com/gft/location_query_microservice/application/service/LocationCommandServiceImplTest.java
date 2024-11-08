@@ -1,5 +1,7 @@
 package com.gft.location_query_microservice.application.service;
 
+import com.gft.location_query_microservice.application.dto.LocationUpdateDTO;
+import com.gft.location_query_microservice.domain.exception.LocationNotFoundException;
 import com.gft.location_query_microservice.domain.exception.LocationSaveException;
 import com.gft.location_query_microservice.domain.model.aggregates.LocationUpdate;
 import com.gft.location_query_microservice.domain.repository.LocationCommandRepository;
@@ -13,6 +15,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -32,6 +35,7 @@ class LocationCommandServiceImplTest {
     private VehicleService vehicleService;
 
     private LocationUpdate locationUpdate;
+    private LocationUpdateDTO locationUpdateDTO;
     private ObjectId vehicleId;
     private ObjectId routeId;
 
@@ -48,6 +52,16 @@ class LocationCommandServiceImplTest {
                 .direction(null)
                 .routeId(routeId)
                 .passengerCount(5)
+                .status(null)
+                .events(null)
+                .build();
+        locationUpdateDTO = LocationUpdateDTO.builder()
+                .timestamp(null)
+                .location(null)
+                .speed(60.0)
+                .direction(null)
+                .routeId(new ObjectId("507f1f77bcf86cd799439013"))
+                .passengerCount(10)
                 .status(null)
                 .events(null)
                 .build();
@@ -78,6 +92,51 @@ class LocationCommandServiceImplTest {
         assertEquals("Vehicle not found with id: " + routeId, exception.getMessage());
         verify(vehicleService, times(1)).getVehicleById(any(String.class));
         verify(locationCommandRepository, never()).save(any(LocationUpdate.class));
+    }
+
+    @Test
+    @DisplayName("Test updateLocationUpdate - Successful Update")
+    void updateLocationUpdate_Success() {
+        when(locationCommandRepository.findById(vehicleId)).thenReturn(Mono.just(locationUpdate));
+        when(locationCommandRepository.save(locationUpdate)).thenReturn(Mono.just(locationUpdate));
+        StepVerifier.create(locationService.updateLocationUpdate(vehicleId, locationUpdateDTO))
+                .expectNextMatches(updatedLocation -> updatedLocation.getSpeed().equals(locationUpdateDTO.getSpeed()) &&
+                        updatedLocation.getPassengerCount().equals(locationUpdateDTO.getPassengerCount()))
+                .verifyComplete();
+        verify(locationCommandRepository, times(1)).findById(vehicleId);
+        verify(locationCommandRepository, times(1)).save(locationUpdate);
+    }
+    @Test
+    @DisplayName("Test updateLocationUpdate - LocationNotFoundException")
+    void updateLocationUpdate_LocationNotFoundException() {
+        when(locationCommandRepository.findById(vehicleId)).thenReturn(Mono.empty());
+        StepVerifier.create(locationService.updateLocationUpdate(vehicleId, locationUpdateDTO))
+                .expectErrorMatches(throwable -> throwable instanceof LocationNotFoundException &&
+                        throwable.getMessage().contains("Location update not found for vehicle ID: " + vehicleId))
+                .verify();
+        verify(locationCommandRepository, times(1)).findById(vehicleId);
+        verify(locationCommandRepository, never()).save(any());
+    }
+    @Test
+    @DisplayName("Test deleteLocationUpdate - Successful Deletion")
+    void deleteLocationUpdate_Success() {
+        when(locationCommandRepository.findById(vehicleId)).thenReturn(Mono.just(locationUpdate));
+        when(locationCommandRepository.deleteById(vehicleId)).thenReturn(Mono.empty());
+        StepVerifier.create(locationService.deleteLocationUpdate(vehicleId))
+                .verifyComplete();
+        verify(locationCommandRepository, times(1)).findById(vehicleId);
+        verify(locationCommandRepository, times(1)).deleteById(vehicleId);
+    }
+    @Test
+    @DisplayName("Test deleteLocationUpdate - LocationNotFoundException")
+    void deleteLocationUpdate_LocationNotFoundException() {
+        when(locationCommandRepository.findById(vehicleId)).thenReturn(Mono.empty());
+        StepVerifier.create(locationService.deleteLocationUpdate(vehicleId))
+                .expectErrorMatches(throwable -> throwable instanceof LocationNotFoundException &&
+                        throwable.getMessage().contains("Location update not found for vehicle ID: " + vehicleId))
+                .verify();
+        verify(locationCommandRepository, times(1)).findById(vehicleId);
+        verify(locationCommandRepository, never()).deleteById(vehicleId);
     }
 
 }

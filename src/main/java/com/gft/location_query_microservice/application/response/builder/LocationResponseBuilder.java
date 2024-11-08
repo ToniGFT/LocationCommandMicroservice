@@ -10,4 +10,11 @@ public class LocationResponseBuilder {
         return ResponseEntity.status(HttpStatus.CREATED).body(locationUpdate);
     }
 
+    public static ResponseEntity<LocationUpdate> generateOkResponse(LocationUpdate locationUpdate) {
+        return ResponseEntity.ok(locationUpdate);
+    }
+
+    public static ResponseEntity<Void> generateNoContentResponse() {
+        return ResponseEntity.noContent().build();
+    }
 }

@@ -1,16 +1,15 @@
 package com.gft.location_query_microservice.application.controller;
 
+import com.gft.location_query_microservice.application.dto.LocationUpdateDTO;
+import com.gft.location_query_microservice.application.service.LocationCommandService;
 import com.gft.location_query_microservice.domain.model.aggregates.LocationUpdate;
+import com.gft.location_query_microservice.domain.model.valueobject.Coordinates;
 import com.gft.location_query_microservice.domain.model.valueobject.Event;
 import com.gft.location_query_microservice.domain.model.valueobject.enums.Direction;
 import com.gft.location_query_microservice.domain.model.valueobject.enums.EventType;
 import com.gft.location_query_microservice.domain.model.valueobject.enums.OperationalStatus;
 import com.gft.location_query_microservice.domain.repository.LocationCommandRepository;
 import com.gft.location_query_microservice.infraestructure.model.aggregates.Vehicle;
-import com.gft.location_query_microservice.infraestructure.model.entities.Driver;
-import com.gft.location_query_microservice.infraestructure.model.valueobjects.Contact;
-import com.gft.location_query_microservice.infraestructure.model.valueobjects.VehicleCoordinates;
-import com.gft.location_query_microservice.infraestructure.model.valueobjects.MaintenanceDetails;
 import com.gft.location_query_microservice.infraestructure.model.valueobjects.enums.VehicleStatus;
 import com.gft.location_query_microservice.infraestructure.model.valueobjects.enums.VehicleType;
 import com.gft.location_query_microservice.infraestructure.service.VehicleService;
@@ -23,12 +22,18 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Mono;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.List;
+import java.util.Collections;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.when;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public class LocationCommandControllerIntegrationTest {
@@ -36,79 +41,94 @@ public class LocationCommandControllerIntegrationTest {
     @Autowired
     private WebTestClient webTestClient;
 
-    @Autowired
-    private LocationCommandRepository locationRepository;
+    @MockBean
+    private LocationCommandService locationCommandService;
 
     @MockBean
-    private VehicleService vehicleService;
+    private LocationCommandRepository locationRepository;
 
-    private static final ObjectId VEHICLE_ID = new ObjectId("507f1f77bcf86cd799439011");
-    private static final ObjectId ROUTE_ID = new ObjectId("507f1f77bcf86cd799439012");
-    private static final ObjectId EVENT_ID_1 = new ObjectId("507f1f77bcf86cd799439013");
-    private static final ObjectId EVENT_ID_2 = new ObjectId("507f1f77bcf86cd799439014");
-    private static final ObjectId STOP_ID_1 = new ObjectId("507f1f77bcf86cd799439015");
-    private static final ObjectId STOP_ID_2 = new ObjectId("507f1f77bcf86cd799439016");
+    private LocationUpdate sampleLocationUpdate;
+    private LocationUpdateDTO sampleLocationUpdateDTO;
 
-    private LocationUpdate locationUpdate;
 
     @BeforeEach
-    void setupDatabase() {
-        locationRepository.deleteAll().block();
-
-        Vehicle mockVehicle = Vehicle.builder()
-                .vehicleId(VEHICLE_ID)
-                .licensePlate("ABC123")
-                .capacity(50)
-                .currentStatus(VehicleStatus.IN_SERVICE)
-                .type(VehicleType.BUS)
-                .driver(new Driver(ObjectId.get(), "John Doe", new Contact("john.doe@example.com", "+1234567890")))
-                .maintenanceDetails(new MaintenanceDetails("Scheduled", LocalDate.now(), ""))
-                .currentLocation(new VehicleCoordinates(40.730610, -73.935242))
-                .routeId(ROUTE_ID)
-                .build();
-
-        BDDMockito.given(vehicleService.getVehicleById(VEHICLE_ID.toHexString()))
-                .willReturn(Mono.just(mockVehicle));
-
-        locationUpdate = LocationUpdate.builder()
-                .vehicleId(VEHICLE_ID)
-                .timestamp(LocalDateTime.parse("2024-07-04T14:48:00"))
-                .location(com.gft.location_query_microservice.domain.model.valueobject.Coordinates.builder().latitude(40.730610).longitude(-73.935242).build())
-                .speed(45.0)
+    void setup() {
+        sampleLocationUpdate = LocationUpdate.builder()
+                .vehicleId(new ObjectId("672b1343bb9d3b2fdd48ac14"))
+                .timestamp(LocalDateTime.now().minusMinutes(5))
+                .location(new Coordinates(12.34, 56.78))
+                .speed(50.0)
                 .direction(Direction.NORTH)
-                .routeId(ROUTE_ID)
-                .passengerCount(30)
+                .routeId(new ObjectId("672b1343bb9d3b2fdd48ac14"))
+                .passengerCount(10)
                 .status(OperationalStatus.ON_ROUTE)
-                .events(List.of(
+                .events(Collections.singletonList(
                         Event.builder()
-                                .eventId(EVENT_ID_1)
+                                .eventId(new ObjectId("672b1343bb9d3b2fdd48ac14"))
                                 .type(EventType.STOP_ARRIVAL)
-                                .stopId(STOP_ID_1)
-                                .timestamp(LocalDateTime.parse("2024-07-04T14:47:00"))
-                                .build(),
-                        Event.builder()
-                                .eventId(EVENT_ID_2)
-                                .type(EventType.STOP_DEPARTURE)
-                                .stopId(STOP_ID_1)
-                                .timestamp(LocalDateTime.parse("2024-07-04T14:48:00"))
+                                .stopId(new ObjectId("672b1343bb9d3b2fdd48ac14"))
+                                .timestamp(LocalDateTime.now().minusMinutes(10))
+                                .details("Arrived at stop")
                                 .build()
                 ))
                 .build();
 
-        locationRepository.save(locationUpdate).block();
+        sampleLocationUpdateDTO = LocationUpdateDTO.builder()
+                .timestamp(LocalDateTime.now())
+                .location(new Coordinates(12.34, 57.00))
+                .speed(60.0)
+                .direction(Direction.EAST)
+                .routeId(new ObjectId("672b1343bb9d3b2fdd48ac14"))
+                .passengerCount(15)
+                .status(OperationalStatus.STOPPED)
+                .events(Collections.singletonList(
+                        Event.builder()
+                                .eventId(new ObjectId("672b1343bb9d3b2fdd48ac14"))
+                                .type(EventType.STOP_DEPARTURE)
+                                .stopId(new ObjectId("672b1343bb9d3b2fdd48ac14"))
+                                .timestamp(LocalDateTime.now().minusMinutes(5))
+                                .details("Departed from stop")
+                                .build()
+                ))
+                .build();
+
+        Vehicle mockVehicle = Vehicle.builder()
+                .vehicleId(new ObjectId("672b1343bb9d3b2fdd48ac14"))
+                .licensePlate("ABC123")
+                .capacity(50)
+                .currentStatus(VehicleStatus.IN_SERVICE)
+                .routeId(new ObjectId("672b1343bb9d3b2fdd48ac14"))
+                .build();
+
     }
 
+    @Test
+    public void testCreateLocationUpdate() {
+
+        when(locationCommandService.saveLocationUpdate(any(LocationUpdate.class)))
+                .thenReturn(Mono.just(sampleLocationUpdate));
+
+        webTestClient.post()
+                .uri("/locations")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(sampleLocationUpdate)
+                .exchange()
+                .expectStatus().isCreated()
+                .expectBody()
+                .jsonPath("$.speed").isEqualTo(50.0)
+                .jsonPath("$.status").isEqualTo(OperationalStatus.ON_ROUTE);
+    }
 
     @Test
     @DisplayName("Create LocationUpdate - Should return Bad Request for Invalid Data")
     void createLocationUpdate_shouldReturnBadRequestForInvalidData() {
         LocationUpdate invalidLocationUpdate = LocationUpdate.builder()
-                .vehicleId(null)
+                .vehicleId(new ObjectId("672b1343bb9d3b2fdd48ac14"))
                 .timestamp(LocalDateTime.now())
-                .location(com.gft.location_query_microservice.domain.model.valueobject.Coordinates.builder().latitude(41.712776).longitude(-73.005974).build())
+                .location(new Coordinates(41.712776, -73.005974))
                 .speed(70.0)
                 .direction(null)
-                .routeId(ROUTE_ID)
+                .routeId(new ObjectId("672b1343bb9d3b2fdd48ac14"))
                 .passengerCount(15)
                 .status(null)
                 .events(null)
@@ -119,7 +139,35 @@ public class LocationCommandControllerIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(invalidLocationUpdate)
                 .exchange()
-
                 .expectStatus().isBadRequest();
+    }
+
+    @Test
+    public void testUpdateLocationUpdate() {
+
+        when(locationCommandService.updateLocationUpdate(any(ObjectId.class),any(LocationUpdateDTO.class)))
+                .thenReturn(Mono.just(sampleLocationUpdate));
+
+        webTestClient.put().uri("/locations/{id}", sampleLocationUpdate.getVehicleId().toHexString())
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(sampleLocationUpdateDTO)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(LocationUpdate.class)
+                .value(response -> {
+                    assertNotNull(response);
+                    assertEquals(sampleLocationUpdate.getSpeed(), response.getSpeed());
+                    assertEquals(sampleLocationUpdate.getStatus(), response.getStatus());
+                });
+    }
+
+    @Test
+    public void testDeleteLocationUpdate() {
+        when(locationCommandService.deleteLocationUpdate(eq(sampleLocationUpdate.getVehicleId())))
+                .thenReturn(Mono.empty());
+
+        webTestClient.delete().uri("/locations/{id}",sampleLocationUpdate.getVehicleId().toHexString() )
+                .exchange()
+                .expectStatus().isNoContent();
     }
 }

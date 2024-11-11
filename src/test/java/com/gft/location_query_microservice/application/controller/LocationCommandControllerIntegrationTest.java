@@ -11,18 +11,14 @@ import com.gft.location_query_microservice.domain.model.valueobject.enums.Operat
 import com.gft.location_query_microservice.domain.repository.LocationCommandRepository;
 import com.gft.location_query_microservice.infraestructure.model.aggregates.Vehicle;
 import com.gft.location_query_microservice.infraestructure.model.valueobjects.enums.VehicleStatus;
-import com.gft.location_query_microservice.infraestructure.model.valueobjects.enums.VehicleType;
-import com.gft.location_query_microservice.infraestructure.service.VehicleService;
 import org.bson.types.ObjectId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mockito.BDDMockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Mono;
 
@@ -116,7 +112,7 @@ public class LocationCommandControllerIntegrationTest {
                 .expectStatus().isCreated()
                 .expectBody()
                 .jsonPath("$.speed").isEqualTo(50.0)
-                .jsonPath("$.status").isEqualTo(OperationalStatus.ON_ROUTE);
+                .jsonPath("$.passengerCount").isEqualTo(10);
     }
 
     @Test

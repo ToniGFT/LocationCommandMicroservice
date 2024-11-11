@@ -132,7 +132,6 @@
                         </goals>
                         <configuration>
                             <excludes>
-                                <exclude>**/*IntegrationsTest.java</exclude>
                                 <exclude>**/*EndToEndTest.java</exclude>
                             </excludes>
                         </configuration>

@@ -2,7 +2,7 @@ package com.gft.location_query_microservice.infraestructure.model.aggregates;
 
 
 import com.gft.location_query_microservice.infraestructure.model.entities.Driver;
-import com.gft.location_query_microservice.infraestructure.model.valueobjects.Coordinates;
+import com.gft.location_query_microservice.infraestructure.model.valueobjects.VehicleCoordinates;
 import com.gft.location_query_microservice.infraestructure.model.valueobjects.MaintenanceDetails;
 import com.gft.location_query_microservice.infraestructure.model.valueobjects.enums.VehicleStatus;
 import com.gft.location_query_microservice.infraestructure.model.valueobjects.enums.VehicleType;
@@ -49,7 +49,7 @@ public class Vehicle {
     private MaintenanceDetails maintenanceDetails;
 
     @NotNull(message = "Current location is required")
-    private Coordinates currentLocation;
+    private VehicleCoordinates currentLocation;
 
     private LocalDate lastMaintenance;
 

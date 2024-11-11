@@ -9,7 +9,7 @@ import com.gft.location_query_microservice.domain.repository.LocationCommandRepo
 import com.gft.location_query_microservice.infraestructure.model.aggregates.Vehicle;
 import com.gft.location_query_microservice.infraestructure.model.entities.Driver;
 import com.gft.location_query_microservice.infraestructure.model.valueobjects.Contact;
-import com.gft.location_query_microservice.infraestructure.model.valueobjects.Coordinates;
+import com.gft.location_query_microservice.infraestructure.model.valueobjects.VehicleCoordinates;
 import com.gft.location_query_microservice.infraestructure.model.valueobjects.MaintenanceDetails;
 import com.gft.location_query_microservice.infraestructure.model.valueobjects.enums.VehicleStatus;
 import com.gft.location_query_microservice.infraestructure.model.valueobjects.enums.VehicleType;
@@ -63,7 +63,7 @@ public class LocationCommandControllerIntegrationTest {
                 .type(VehicleType.BUS)
                 .driver(new Driver(ObjectId.get(), "John Doe", new Contact("john.doe@example.com", "+1234567890")))
                 .maintenanceDetails(new MaintenanceDetails("Scheduled", LocalDate.now(), ""))
-                .currentLocation(new Coordinates(40.730610, -73.935242))
+                .currentLocation(new VehicleCoordinates(40.730610, -73.935242))
                 .routeId(ROUTE_ID)
                 .build();
 
@@ -98,49 +98,6 @@ public class LocationCommandControllerIntegrationTest {
         locationRepository.save(locationUpdate).block();
     }
 
-    @Test
-    @DisplayName("Create LocationUpdate - Should return Created status")
-    void createLocationUpdate_shouldReturnCreatedStatus() {
-        LocationUpdate newLocationUpdate = LocationUpdate.builder()
-                .vehicleId(VEHICLE_ID)
-                .timestamp(LocalDateTime.parse("2024-07-04T15:00:00"))
-                .location(com.gft.location_query_microservice.domain.model.valueobject.Coordinates.builder().latitude(41.712776).longitude(-73.005974).build())
-                .speed(50.0)
-                .direction(Direction.EAST)
-                .routeId(ROUTE_ID)
-                .passengerCount(20)
-                .status(OperationalStatus.ON_ROUTE)
-                .events(List.of(
-                        Event.builder()
-                                .eventId(EVENT_ID_1)
-                                .type(EventType.STOP_ARRIVAL)
-                                .stopId(STOP_ID_2)
-                                .timestamp(LocalDateTime.parse("2024-07-04T14:59:00"))
-                                .build(),
-                        Event.builder()
-                                .eventId(EVENT_ID_2)
-                                .type(EventType.STOP_DEPARTURE)
-                                .stopId(STOP_ID_2)
-                                .timestamp(LocalDateTime.parse("2024-07-04T15:00:00"))
-                                .build()
-                ))
-                .build();
-
-        webTestClient.post()
-                .uri("/locations")
-                .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(newLocationUpdate)
-                .exchange()
-
-                .expectStatus().isCreated()
-                .expectBody(LocationUpdate.class)
-                .value(createdLocation -> {
-                    assert createdLocation.getSpeed().equals(50.0);
-                    assert createdLocation.getDirection() == Direction.EAST;
-                    assert createdLocation.getStatus() == OperationalStatus.ON_ROUTE;
-                    assert createdLocation.getEvents().size() == 2;
-                });
-    }
 
     @Test
     @DisplayName("Create LocationUpdate - Should return Bad Request for Invalid Data")

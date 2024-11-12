@@ -1,0 +1,267 @@
+openapi: 3.0.1
+info:
+  title: Location Command API
+  description: API para gestionar comandos de actualizaciones de ubicación, permitiendo crear, actualizar y eliminar actualizaciones de ubicación de vehículos.
+  version: "1.0.0"
+servers:
+  - url: http://localhost:8080
+    description: Servidor local de desarrollo
+
+paths:
+  /locations:
+    post:
+      summary: Crear una nueva actualización de ubicación
+      description: Crea una nueva actualización de ubicación para un vehículo.
+      operationId: createLocationUpdate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LocationUpdate'
+      responses:
+        '201':
+          description: Actualización de ubicación creada exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LocationUpdate'
+        '400':
+          description: Error de validación en los datos de la actualización de ubicación
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Error de validación en los datos de la actualización de ubicación
+        '500':
+          description: Error interno al crear la actualización de ubicación
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Error interno al crear la actualización de ubicación
+
+  /locations/{id}:
+    put:
+      summary: Actualizar una actualización de ubicación
+      description: Actualiza la información de una actualización de ubicación específica mediante su ID.
+      operationId: updateLocationUpdate
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "61616c64d4d4f1b2c5f8e7e9"
+          description: ID de la actualización de ubicación en formato de cadena
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LocationUpdateDTO'
+      responses:
+        '200':
+          description: Actualización de ubicación actualizada exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LocationUpdate'
+        '404':
+          description: Actualización de ubicación no encontrada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Actualización de ubicación no encontrada
+        '400':
+          description: Error de validación en los datos de la actualización de ubicación
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Error de validación en los datos de la actualización de ubicación
+        '500':
+          description: Error interno al actualizar la actualización de ubicación
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Error interno al actualizar la actualización de ubicación
+
+    delete:
+      summary: Eliminar una actualización de ubicación
+      description: Elimina una actualización de ubicación específica mediante su ID.
+      operationId: deleteLocationUpdate
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: "61616c64d4d4f1b2c5f8e7e9"
+          description: ID de la actualización de ubicación en formato de cadena
+      responses:
+        '204':
+          description: Actualización de ubicación eliminada exitosamente, sin contenido en la respuesta
+        '404':
+          description: Actualización de ubicación no encontrada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Actualización de ubicación no encontrada
+        '500':
+          description: Error interno al eliminar la actualización de ubicación
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Error interno al eliminar la actualización de ubicación
+
+components:
+  schemas:
+    LocationUpdate:
+      type: object
+      properties:
+        vehicleId:
+          type: string
+          description: ID del vehículo asociado a la actualización de ubicación
+          example: "615b4e64c4f8a7e9b2c5f8d3"
+        timestamp:
+          type: string
+          format: date-time
+          description: Marca temporal de la actualización
+          example: "2023-01-15T10:00:00Z"
+        location:
+          type: object
+          $ref: '#/components/schemas/Coordinates'
+        speed:
+          type: number
+          format: double
+          description: Velocidad del vehículo en km/h
+          example: 60.5
+        direction:
+          type: string
+          description: Dirección de movimiento del vehículo
+          enum:
+            - NORTH
+            - EAST
+            - SOUTH
+            - WEST
+          example: "NORTH"
+        routeId:
+          type: string
+          description: ID de la ruta actual
+          example: "615b4e64c4f8a7e9b2c5f8d3"
+        passengerCount:
+          type: integer
+          description: Número de pasajeros en el vehículo
+          example: 3
+        status:
+          type: string
+          description: Estado operativo del vehículo
+          enum:
+            - ACTIVE
+            - INACTIVE
+            - UNDER_MAINTENANCE
+          example: "ACTIVE"
+        events:
+          type: array
+          description: Lista de eventos asociados a la actualización de ubicación
+          items:
+            $ref: '#/components/schemas/Event'
+
+    LocationUpdateDTO:
+      type: object
+      properties:
+        location:
+          type: object
+          $ref: '#/components/schemas/Coordinates'
+        speed:
+          type: number
+          format: double
+          description: Velocidad del vehículo en km/h
+          example: 60.5
+        direction:
+          type: string
+          description: Dirección de movimiento del vehículo
+          enum:
+            - NORTH
+            - EAST
+            - SOUTH
+            - WEST
+          example: "NORTH"
+        passengerCount:
+          type: integer
+          description: Número de pasajeros en el vehículo
+          example: 3
+        status:
+          type: string
+          description: Estado operativo del vehículo
+          enum:
+            - ACTIVE
+            - INACTIVE
+            - UNDER_MAINTENANCE
+          example: "ACTIVE"
+        events:
+          type: array
+          description: Lista de eventos asociados a la actualización de ubicación
+          items:
+            $ref: '#/components/schemas/Event'
+
+    Coordinates:
+      type: object
+      properties:
+        latitude:
+          type: number
+          format: double
+          description: Latitud de la ubicación
+          example: -34.603722
+        longitude:
+          type: number
+          format: double
+          description: Longitud de la ubicación
+          example: -58.381592
+
+    Event:
+      type: object
+      properties:
+        eventId:
+          type: string
+          description: ID único del evento
+          example: "61616c64d4d4f1b2c5f8e7f0"
+        eventType:
+          type: string
+          description: Tipo de evento registrado
+          example: "TRAFFIC_JAM"
+        description:
+          type: string
+          description: Descripción del evento
+          example: "Congestión de tráfico en la autopista"
+        timestamp:
+          type: string
+          format: date-time
+          description: Marca temporal del evento
+          example: "2023-01-15T10:00:00Z"

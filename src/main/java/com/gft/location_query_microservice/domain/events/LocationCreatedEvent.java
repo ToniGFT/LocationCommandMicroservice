@@ -18,7 +18,6 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 public class LocationCreatedEvent {
-    private ObjectId locationId;
     private ObjectId vehicleId;
     private LocalDateTime timestamp;
     private Coordinates location;

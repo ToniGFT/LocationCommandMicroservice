@@ -1,14 +1,29 @@
+server:
+  port: 8085
+
 spring:
   application:
-    name: location-command-microservice
+    name: location-command
+  kafka:
+    bootstrap-servers: 127.0.0.1:9094
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
   data:
     mongodb:
       uri: mongodb+srv://nabz:nabz@workshop.rh1jm.mongodb.net/Workshop?retryWrites=true&w=majority
 
-server:
-  port: 8081
+kafka:
+  topics:
+    location-events: location-events
+
+logging:
+  level:
+    root: INFO
+    org.apache.kafka: WARN
+    org.springframework.kafka: INFO
 
 vehicles:
   api:
-    base-url: http://localhost:8080
-    get-by-id: /vehicles/{idString}
+    base-url: http://localhost:8082/vehicles
+    get-by-id: /{id}
